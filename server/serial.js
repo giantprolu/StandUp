@@ -7,9 +7,15 @@ require('dotenv').config();
 
 function initSerial() {
   try {
+    // Check if we're in a development environment without hardware
+    if (process.env.NODE_ENV === 'development' && !process.env.SERIAL_PORT) {
+      console.log('⚠️ Running in development mode without serial device');
+      return null;
+    }
+
     const port = new SerialPort({
-      path: process.env.SERIAL_PORT,
-      baudRate: 9600, // Adjust to match your device's baud rate
+      path: process.env.SERIAL_PORT || '/dev/ttyACM0',
+      baudRate: parseInt(process.env.BAUD_RATE) || 9600,
     });
 
     port.on('open', () => {
@@ -33,6 +39,7 @@ function initSerial() {
     return port;
   } catch (error) {
     console.error('Failed to initialize serial port:', error);
+    console.log('⚠️ Continuing without serial connection');
     return null;
   }
 }

@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react';
 import io, { Socket } from 'socket.io-client';
 import { SoundData } from '../types/sound';
 
-// This should be your backend server URL where the WebSocket is hosted
-const SOCKET_SERVER_URL = 'http://localhost:3000';
+// Replace this:
+const SOCKET_SERVER_URL = 'http://192.168.1.27:3000';
+// For example:
+// const SOCKET_SERVER_URL = 'http://192.168.1.100:3000';
 
 export const useSocketConnection = () => {
   const [socket, setSocket] = useState<Socket | null>(null);

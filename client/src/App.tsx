@@ -3,7 +3,9 @@ import Dashboard from './components/Dashboard';
 import { useEffect, useState } from 'react';
 import io from 'socket.io-client';
 
-const socket = io();
+// Use the same URL as in your socket.ts file
+const socket = io('http://192.168.1.27:3000');
+
 function App() {
   const [soundData, setSoundData] = useState('');
 
