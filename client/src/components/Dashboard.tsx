@@ -1,11 +1,22 @@
 import React from 'react';
-import SoundMeter from './SoundMeter';
+import SoundMeter, { SoundMeterRef } from './SoundMeter';
 import ConnectionStatus from './ConnectionStatus';
 import { useSocketConnection } from '../services/socket';
 import { RotateCcw } from 'lucide-react';
 
 const Dashboard: React.FC = () => {
   const { soundData, isConnected, error, resetMaxPeak, simulationActive } = useSocketConnection();
+  
+  // Référence à l'instance du SoundMeter pour le pic max
+  const maxMeterRef = React.useRef<SoundMeterRef>(null);
+
+  // Fonction qui appelle la réinitialisation à la fois côté serveur et dans le composant
+  const handleResetMaxPeak = () => {
+    resetMaxPeak(); // Appel à la fonction du serveur
+    if (maxMeterRef.current) {
+      maxMeterRef.current.resetLocalMax();
+    }
+  };
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
@@ -28,12 +39,14 @@ const Dashboard: React.FC = () => {
         
         <div className="relative">
           <SoundMeter 
+            ref={maxMeterRef}
             value={soundData.maxPeak} 
             label="Pic Sonore Maximum" 
             showIndicator={false}
+            isMaxMeter={true}
           />
           <button 
-            onClick={resetMaxPeak}
+            onClick={handleResetMaxPeak}
             className="absolute top-4 right-4 p-2 text-gray-500 hover:text-blue-500 transition-colors"
             title="Réinitialiser le pic maximum"
           >

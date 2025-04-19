@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { Activity } from 'lucide-react';
 
 interface SoundMeterProps {
@@ -6,16 +6,39 @@ interface SoundMeterProps {
   label: string;
   maxValue?: number;
   showIndicator?: boolean;
+  isMaxMeter?: boolean;
 }
 
-const SoundMeter: React.FC<SoundMeterProps> = ({ 
+// Définir l'interface pour les méthodes exposées via la ref
+export interface SoundMeterRef {
+  resetLocalMax: () => void;
+}
+
+const SoundMeter = forwardRef<SoundMeterRef, SoundMeterProps>(({ 
   value, 
   label, 
   maxValue = 120, 
-  showIndicator = true 
-}) => {
+  showIndicator = true,
+  isMaxMeter = false
+}, ref) => {
+  // Track the all-time maximum value locally
+  const [allTimeMax, setAllTimeMax] = useState(0);
+  
+  // Update the all-time max if this is a max meter and we see a higher value
+  useEffect(() => {
+    if (isMaxMeter && value > allTimeMax) {
+      setAllTimeMax(value);
+    }
+  }, [value, isMaxMeter, allTimeMax]);
+  
+  // Use the local max if this is a max meter, otherwise use the incoming value
+  const displayValue = isMaxMeter ? allTimeMax : value;
+  
+  // Format the value to have max 2 decimal places
+  const formattedValue = Number(displayValue.toFixed(2));
+  
   // Calculate percentage for the meter fill
-  const percentage = Math.min(Math.max((value / maxValue) * 100, 0), 100);
+  const percentage = Math.min(Math.max((formattedValue / maxValue) * 100, 0), 100);
   
   // Determine color based on sound level
   let colorClass = 'bg-green-500';
@@ -27,6 +50,18 @@ const SoundMeter: React.FC<SoundMeterProps> = ({
     colorClass = 'bg-blue-500';
   }
 
+  // Function to reset the all-time max (if this component supports it)
+  const resetLocalMax = () => {
+    if (isMaxMeter) {
+      setAllTimeMax(0);
+    }
+  };
+
+  // Expose methods to parent component via ref
+  useImperativeHandle(ref, () => ({
+    resetLocalMax
+  }));
+
   return (
     <div className="bg-white rounded-lg shadow-md p-6 transition-all duration-300 hover:shadow-lg">
       <div className="flex justify-between items-center mb-2">
@@ -34,7 +69,7 @@ const SoundMeter: React.FC<SoundMeterProps> = ({
           <Activity className="w-5 h-5 mr-2 text-blue-500" />
           {label}
         </h3>
-        <span className="text-2xl font-bold">{value} dB</span>
+        <span className="text-2xl font-bold">{formattedValue} dB</span>
       </div>
       
       <div className="w-full bg-gray-200 rounded-full h-6 mb-2">
@@ -56,6 +91,9 @@ const SoundMeter: React.FC<SoundMeterProps> = ({
       )}
     </div>
   );
-};
+});
+
+// Ajouter un displayName pour une meilleure expérience de débogage
+SoundMeter.displayName = 'SoundMeter';
 
 export default SoundMeter;
