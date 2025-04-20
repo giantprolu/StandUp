@@ -1,4 +1,4 @@
-import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
+import React, { useState, useEffect, forwardRef, useImperativeHandle, useRef } from 'react';
 import { Activity, RotateCcw } from 'lucide-react';
 
 interface SoundMeterProps {
@@ -7,11 +7,10 @@ interface SoundMeterProps {
   maxValue?: number;
   showIndicator?: boolean;
   isMaxMeter?: boolean;
-  onReset?: () => void; // Ajouter cette prop
-  showResetButton?: boolean; // Ajouter cette prop
+  onReset?: () => void;
+  showResetButton?: boolean;
 }
 
-// Définir l'interface pour les méthodes exposées via la ref
 export interface SoundMeterRef {
   resetLocalMax: () => void;
 }
@@ -27,12 +26,24 @@ const SoundMeter = forwardRef<SoundMeterRef, SoundMeterProps>(({
 }, ref) => {
   // Track the all-time maximum value locally
   const [allTimeMax, setAllTimeMax] = useState(0);
+  // Ajouter un flag pour ignorer la prochaine mise à jour après réinitialisation
+  const ignoreNextUpdate = useRef(false);
   
   // Update the all-time max if this is a max meter and we see a higher value
   useEffect(() => {
-    if (isMaxMeter && value > allTimeMax) {
-      console.log(`Updating max from ${allTimeMax} to ${value}`);
-      setAllTimeMax(value);
+    if (isMaxMeter) {
+      // Si on doit ignorer cette mise à jour (juste après un reset)
+      if (ignoreNextUpdate.current) {
+        console.log('Ignoring update right after reset');
+        ignoreNextUpdate.current = false;
+        return;
+      }
+      
+      // Sinon mettre à jour comme d'habitude
+      if (value > allTimeMax) {
+        console.log(`Updating max from ${allTimeMax} to ${value}`);
+        setAllTimeMax(value);
+      }
     }
   }, [value, isMaxMeter, allTimeMax]);
   
@@ -60,6 +71,8 @@ const SoundMeter = forwardRef<SoundMeterRef, SoundMeterProps>(({
     if (isMaxMeter) {
       console.log('Resetting local max to 0');
       setAllTimeMax(0);
+      // Activer le flag pour ignorer la prochaine mise à jour
+      ignoreNextUpdate.current = true;
     }
   };
 
