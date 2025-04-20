@@ -47,10 +47,11 @@ const Dashboard: React.FC = () => {
           />
           <button 
             onClick={handleResetMaxPeak}
-            className="absolute top-4 right-4 p-2 text-gray-500 hover:text-blue-500 transition-colors"
+            className="absolute top-4 right-4 p-2 bg-gray-100 hover:bg-blue-100 text-gray-700 hover:text-blue-700 rounded-full transition-all duration-200 flex items-center"
             title="Réinitialiser le pic maximum"
           >
             <RotateCcw className="w-5 h-5" />
+            <span className="ml-1 hidden md:inline-block text-sm">Réinitialiser</span>
           </button>
         </div>
       </div>
@@ -60,6 +61,17 @@ const Dashboard: React.FC = () => {
         <div className="h-64 flex items-center justify-center bg-gray-100 rounded">
           <p className="text-gray-500">Le graphique d'historique sera affiché ici dans une future version</p>
         </div>
+      </div>
+      
+      {/* Bouton de réinitialisation global du pic maximum */}
+      <div className="mt-6 text-center">
+        <button 
+          onClick={handleResetMaxPeak}
+          className="inline-flex items-center justify-center px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 transition-colors shadow-sm"
+        >
+          <RotateCcw className="w-5 h-5 mr-2" />
+          Réinitialiser le pic sonore maximum
+        </button>
       </div>
     </div>
   );

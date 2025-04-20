@@ -53,7 +53,17 @@ export const useSocketConnection = () => {
 
   // Reset max peak function
   const resetMaxPeak = () => {
-    // Add implementation if needed
+    if (socket) {
+      // Envoyer un événement au serveur pour réinitialiser le pic
+      socket.emit('resetMaxPeak');
+      
+      // Mettre à jour l'état local
+      setSoundData(prev => ({ ...prev, maxPeak: 0 }));
+      
+      console.log('Max peak reset requested');
+    } else {
+      console.warn('Cannot reset max peak: socket not connected');
+    }
   };
 
   return { soundData, isConnected, error, resetMaxPeak, simulationActive };
