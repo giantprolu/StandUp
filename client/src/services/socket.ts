@@ -57,8 +57,8 @@ export const useSocketConnection = () => {
       // Envoyer un événement au serveur pour réinitialiser le pic
       socket.emit('resetMaxPeak');
       
-      // Mettre à jour l'état local
-      setSoundData(prev => ({ ...prev, maxPeak: 0 }));
+      // Mettre à jour l'état local - SUPPRIMEZ CETTE LIGNE si vous voulez conserver la valeur côté client
+      // setSoundData(prev => ({ ...prev, maxPeak: 0 }));
       
       console.log('Max peak reset requested');
     } else {

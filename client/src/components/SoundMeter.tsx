@@ -32,7 +32,8 @@ const SoundMeter = forwardRef<SoundMeterRef, SoundMeterProps>(({
   }, [value, isMaxMeter, allTimeMax]);
   
   // Use the local max if this is a max meter, otherwise use the incoming value
-  const displayValue = isMaxMeter ? allTimeMax : value;
+  // Cette ligne est cruciale - elle utilise le maximum local ou la valeur transmise
+  const displayValue = isMaxMeter ? Math.max(allTimeMax, value) : value;
   
   // Format the value to have max 2 decimal places
   const formattedValue = Number(displayValue.toFixed(2));
