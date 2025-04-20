@@ -63,13 +63,6 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Affichage des valeurs brutes pour débogage */}
-      <div className="bg-gray-100 p-3 mb-6 rounded text-sm">
-        <p>Valeurs brutes pour débogage:</p>
-        <p>Niveau actuel: {soundData.currentDb || 0}</p>
-        <p>Pic maximum: {soundData.maxPeak || 0}</p>
-      </div>
-
       <div className="bg-white rounded-lg shadow-md p-6">
         <h2 className="text-xl font-semibold text-gray-700 mb-4">Historique des Niveaux</h2>
         <div className="h-64 flex items-center justify-center bg-gray-100 rounded">

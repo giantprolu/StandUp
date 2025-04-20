@@ -5,42 +5,41 @@ import { SoundData } from '../types/sound';
 // Use your Raspberry Pi's IP address
 const SOCKET_SERVER_URL = 'http://192.168.1.27:3000';
 
-// Ajoutez cette fonction globale en dehors du hook
-let globalMaxPeakValue = 0;
-
 export const useSocketConnection = () => {
   const [socket, setSocket] = useState<Socket | null>(null);
-  const [soundData, setSoundData] = useState<SoundData>({ currentDb: 0, maxPeak: 0 });
+  const [rawSoundData, setRawSoundData] = useState<SoundData>({ currentDb: 0, maxPeak: 0 });
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [simulationActive, setSimulationActive] = useState(false);
-  const [customMaxPeak, setCustomMaxPeak] = useState<number | null>(null);
   
-  // Référence pour suivre si le pic maximal est en cours de réinitialisation
-  const maxPeakResetInProgress = useRef(false);
-
-  // État local pour le max peak, indépendant du serveur
+  // Gestion complètement locale du pic maximum
   const [localMaxPeak, setLocalMaxPeak] = useState(0);
+  const resetRequested = useRef(false);
   
-  // Ajouter un flag pour indiquer si on utilise notre propre valeur maximum
-  const useLocalMaxPeak = useRef(false);
+  // Mise à jour du pic maximum local
+  useEffect(() => {
+    const currentLevel = rawSoundData.currentDb;
+    
+    // Si une réinitialisation a été demandée, on ignore la valeur actuelle
+    if (resetRequested.current) {
+      console.log('Reset requested, ignoring current value');
+      return;
+    }
+    
+    // Sinon on met à jour le maximum local si nécessaire
+    if (currentLevel > localMaxPeak) {
+      console.log(`Updating local max from ${localMaxPeak} to ${currentLevel}`);
+      setLocalMaxPeak(currentLevel);
+    }
+  }, [rawSoundData.currentDb, localMaxPeak]);
   
-  // État combiné qui utilise soit la valeur du serveur, soit notre valeur locale
-  const combinedSoundData = {
-    currentDb: soundData.currentDb,
-    maxPeak: useLocalMaxPeak.current ? localMaxPeak : soundData.maxPeak
+  // Données exposées à l'extérieur
+  const soundData = {
+    currentDb: rawSoundData.currentDb,
+    maxPeak: localMaxPeak
   };
 
-  // Effet pour mettre à jour le max local quand nécessaire
   useEffect(() => {
-    // Si on n'utilise pas le max local OU si la valeur du serveur est supérieure, mettre à jour
-    if (!useLocalMaxPeak.current || soundData.maxPeak > localMaxPeak) {
-      setLocalMaxPeak(soundData.maxPeak);
-    }
-  }, [soundData.maxPeak, localMaxPeak]);
-
-  useEffect(() => {
-    // Connect to WebSocket
     const socketInstance = io(SOCKET_SERVER_URL);
     setSocket(socketInstance);
 
@@ -69,20 +68,7 @@ export const useSocketConnection = () => {
       if (!simulationTimer) {
         simulationTimer = setInterval(() => {
           const randomDb = Math.random() * 80;
-          
-          // Utiliser notre propre suivi de la valeur maximale
-          if (randomDb > globalMaxPeakValue && customMaxPeak === null) {
-            globalMaxPeakValue = randomDb;
-          }
-          
-          const maxToDisplay = customMaxPeak !== null ? customMaxPeak : globalMaxPeakValue;
-          
-          const newData = {
-            currentDb: randomDb,
-            maxPeak: maxToDisplay
-          };
-          console.log('Simulation data:', newData);
-          setSoundData(newData);
+          setRawSoundData({ currentDb: randomDb, maxPeak: 0 }); // On ignore maxPeak du serveur
         }, 1000);
       }
     });
@@ -97,34 +83,16 @@ export const useSocketConnection = () => {
       if (!simulationTimer) {
         simulationTimer = setInterval(() => {
           const randomDb = Math.random() * 80;
-          
-          // Utiliser notre propre suivi de la valeur maximale
-          if (randomDb > globalMaxPeakValue && customMaxPeak === null) {
-            globalMaxPeakValue = randomDb;
-          }
-          
-          const maxToDisplay = customMaxPeak !== null ? customMaxPeak : globalMaxPeakValue;
-          
-          const newData = {
-            currentDb: randomDb,
-            maxPeak: maxToDisplay
-          };
-          console.log('Simulation data:', newData);
-          setSoundData(newData);
+          setRawSoundData({ currentDb: randomDb, maxPeak: 0 }); // On ignore maxPeak du serveur
         }, 1000);
       }
     });
 
     socketInstance.on('soundData', (data) => {
       console.log('Received sound data:', data);
-      
-      if (data && typeof data.currentDb === 'number' && typeof data.maxPeak === 'number') {
-        // Si l'utilisateur a défini une valeur personnalisée, l'utiliser
-        if (customMaxPeak !== null) {
-          data = { ...data, maxPeak: customMaxPeak };
-        }
-        
-        setSoundData(data);
+      if (data && typeof data.currentDb === 'number') {
+        // On enregistre les données brutes, mais on ignore maxPeak du serveur
+        setRawSoundData({ currentDb: data.currentDb, maxPeak: 0 });
       } else {
         console.error('Invalid sound data received:', data);
       }
@@ -136,48 +104,29 @@ export const useSocketConnection = () => {
         clearInterval(simulationTimer);
       }
     };
-  }, [customMaxPeak]); // Ajouter customMaxPeak comme dépendance
+  }, []);
 
-  // Reset max peak function
+  // Reset max peak function - maintenant complètement locale
   const resetMaxPeak = () => {
-    // 1. Réinitialiser notre valeur locale immédiatement
+    console.log('Max peak reset requested');
+    
+    // 1. Marquer qu'une réinitialisation a été demandée
+    resetRequested.current = true;
+    
+    // 2. Réinitialiser la valeur max locale
     setLocalMaxPeak(0);
     
-    // 2. Activer l'utilisation de notre valeur locale au lieu de celle du serveur
-    useLocalMaxPeak.current = true;
+    // 3. Après un court délai, permettre de commencer à enregistrer de nouvelles valeurs max
+    setTimeout(() => {
+      resetRequested.current = false;
+      console.log('Ready to track new max values');
+    }, 500); // 500ms devrait être suffisant
     
-    // 3. Envoyer l'événement de réinitialisation au serveur (optionnel)
+    // 4. Facultatif: notifier le serveur (si nécessaire)
     if (socket) {
       socket.emit('resetMaxPeak');
     }
-    
-    console.log('Max peak reset requested - using local tracking');
-    
-    // Après réinitialisation, commencer à écouter le prochain son détecté
-    const detectNextSound = (currentDb: number) => {
-      // Si on détecte un son suffisamment fort, commencer à suivre les nouvelles valeurs
-      if (currentDb > 10) { // Seuil arbitraire, à ajuster selon vos besoins
-        setLocalMaxPeak(currentDb);
-        document.removeEventListener('sound-detected', handleSoundDetection as EventListener);
-      }
-    };
-    
-    const handleSoundDetection = (e: CustomEvent) => detectNextSound(e.detail.currentDb);
-    
-    // Nettoyer les écouteurs précédents
-    document.removeEventListener('sound-detected', handleSoundDetection as EventListener);
-    
-    // Enregistrer l'écouteur d'événement
-    document.addEventListener('sound-detected', handleSoundDetection as EventListener);
   };
 
-  // Lorsqu'on reçoit des données de son, émettre un événement personnalisé
-  useEffect(() => {
-    const event = new CustomEvent('sound-detected', { 
-      detail: { currentDb: soundData.currentDb } 
-    });
-    document.dispatchEvent(event);
-  }, [soundData.currentDb]);
-
-  return { soundData: combinedSoundData, isConnected, error, resetMaxPeak, simulationActive, setCustomMaxPeak };
+  return { soundData, isConnected, error, resetMaxPeak, simulationActive };
 };
