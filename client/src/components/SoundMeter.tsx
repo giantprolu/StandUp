@@ -1,5 +1,5 @@
 import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
-import { Activity } from 'lucide-react';
+import { Activity, RotateCcw } from 'lucide-react';
 
 interface SoundMeterProps {
   value: number;
@@ -7,6 +7,8 @@ interface SoundMeterProps {
   maxValue?: number;
   showIndicator?: boolean;
   isMaxMeter?: boolean;
+  onReset?: () => void; // Ajouter cette prop
+  showResetButton?: boolean; // Ajouter cette prop
 }
 
 // Définir l'interface pour les méthodes exposées via la ref
@@ -19,7 +21,9 @@ const SoundMeter = forwardRef<SoundMeterRef, SoundMeterProps>(({
   label, 
   maxValue = 120, 
   showIndicator = true,
-  isMaxMeter = false
+  isMaxMeter = false,
+  onReset,
+  showResetButton = false
 }, ref) => {
   // Track the all-time maximum value locally
   const [allTimeMax, setAllTimeMax] = useState(0);
@@ -71,7 +75,18 @@ const SoundMeter = forwardRef<SoundMeterRef, SoundMeterProps>(({
           <Activity className="w-5 h-5 mr-2 text-blue-500" />
           {label}
         </h3>
-        <span className="text-2xl font-bold">{formattedValue} dB</span>
+        <div className="flex items-center">
+          <span className="text-2xl font-bold mr-2">{formattedValue} dB</span>
+          {showResetButton && isMaxMeter && (
+            <button 
+              onClick={onReset}
+              className="p-1.5 bg-gray-100 hover:bg-blue-100 text-gray-700 hover:text-blue-700 rounded-full transition-all duration-200"
+              title="Réinitialiser le pic maximum"
+            >
+              <RotateCcw className="w-4 h-4" />
+            </button>
+          )}
+        </div>
       </div>
       
       <div className="w-full bg-gray-200 rounded-full h-6 mb-2">

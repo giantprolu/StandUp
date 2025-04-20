@@ -49,6 +49,8 @@ const Dashboard: React.FC = () => {
             label="Pic Sonore Maximum" 
             showIndicator={false}
             isMaxMeter={true}
+            onReset={handleResetMaxPeak}
+            showResetButton={true}
           />
           <button 
             onClick={handleResetMaxPeak}
