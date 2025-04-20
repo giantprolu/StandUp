@@ -1,5 +1,5 @@
 import io, { Socket } from 'socket.io-client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { SoundData } from '../types/sound';
 
 // Use your Raspberry Pi's IP address
@@ -11,6 +11,9 @@ export const useSocketConnection = () => {
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [simulationActive, setSimulationActive] = useState(false);
+  
+  // Référence pour suivre si le pic maximal est en cours de réinitialisation
+  const maxPeakResetInProgress = useRef(false);
 
   useEffect(() => {
     // Connect to WebSocket
@@ -74,6 +77,13 @@ export const useSocketConnection = () => {
 
     socketInstance.on('soundData', (data) => {
       console.log('Received sound data:', data);
+      
+      // Si une réinitialisation est en cours, remplacer la valeur maxPeak par zéro
+      if (maxPeakResetInProgress.current) {
+        console.log('Overriding maxPeak due to reset in progress');
+        data.maxPeak = 0;
+      }
+      
       if (data && typeof data.currentDb === 'number' && typeof data.maxPeak === 'number') {
         setSoundData(data);
       } else {

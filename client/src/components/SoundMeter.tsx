@@ -26,24 +26,35 @@ const SoundMeter = forwardRef<SoundMeterRef, SoundMeterProps>(({
 }, ref) => {
   // Track the all-time maximum value locally
   const [allTimeMax, setAllTimeMax] = useState(0);
-  // Ajouter un flag pour ignorer la prochaine mise à jour après réinitialisation
-  const ignoreNextUpdate = useRef(false);
+  // Ajouter un compteur pour ignorer plusieurs mises à jour après réinitialisation
+  const ignoreUpdateCount = useRef(0);
+  // Timestamp de la dernière réinitialisation
+  const lastResetTime = useRef(0);
   
   // Update the all-time max if this is a max meter and we see a higher value
   useEffect(() => {
-    if (isMaxMeter) {
-      // Si on doit ignorer cette mise à jour (juste après un reset)
-      if (ignoreNextUpdate.current) {
-        console.log('Ignoring update right after reset');
-        ignoreNextUpdate.current = false;
-        return;
-      }
+    if (!isMaxMeter) return;
+    
+    // Vérifier si nous sommes dans une période de "blocage" après réinitialisation
+    const now = Date.now();
+    const timeSinceReset = now - lastResetTime.current;
+    
+    // Si moins de 2 secondes se sont écoulées depuis la réinitialisation
+    // ou si nous avons encore des mises à jour à ignorer
+    if (timeSinceReset < 2000 || ignoreUpdateCount.current > 0) {
+      console.log(`Ignoring update (time: ${timeSinceReset}ms, count: ${ignoreUpdateCount.current})`);
       
-      // Sinon mettre à jour comme d'habitude
-      if (value > allTimeMax) {
-        console.log(`Updating max from ${allTimeMax} to ${value}`);
-        setAllTimeMax(value);
+      // Décrémenter le compteur si nécessaire
+      if (ignoreUpdateCount.current > 0) {
+        ignoreUpdateCount.current--;
       }
+      return;
+    }
+    
+    // Sinon mettre à jour comme d'habitude
+    if (value > allTimeMax) {
+      console.log(`Updating max from ${allTimeMax} to ${value}`);
+      setAllTimeMax(value);
     }
   }, [value, isMaxMeter, allTimeMax]);
   
@@ -71,8 +82,12 @@ const SoundMeter = forwardRef<SoundMeterRef, SoundMeterProps>(({
     if (isMaxMeter) {
       console.log('Resetting local max to 0');
       setAllTimeMax(0);
-      // Activer le flag pour ignorer la prochaine mise à jour
-      ignoreNextUpdate.current = true;
+      
+      // Définir le compteur pour ignorer les 5 prochaines mises à jour
+      ignoreUpdateCount.current = 5;
+      
+      // Enregistrer le timestamp de cette réinitialisation
+      lastResetTime.current = Date.now();
     }
   };
 
