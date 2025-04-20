@@ -52,7 +52,7 @@ const Dashboard: React.FC = () => {
           />
           <button 
             onClick={handleResetMaxPeak}
-            className="absolute top-4 right-4 p-2 bg-gray-100 hover:bg-blue-100 text-gray-700 hover:text-blue-700 rounded-full transition-all duration-200 flex items-center"
+            className="absolute top-4 right-16 p-2 bg-gray-100 hover:bg-blue-100 text-gray-700 hover:text-blue-700 rounded-full transition-all duration-200 flex items-center"
             title="Réinitialiser le pic maximum"
           >
             <RotateCcw className="w-5 h-5" />
