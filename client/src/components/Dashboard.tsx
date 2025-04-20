@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import SoundMeter, { SoundMeterRef } from './SoundMeter';
 import ConnectionStatus from './ConnectionStatus';
 import { useSocketConnection } from '../services/socket';
@@ -9,6 +9,11 @@ const Dashboard: React.FC = () => {
   
   // Référence à l'instance du SoundMeter pour le pic max
   const maxMeterRef = React.useRef<SoundMeterRef>(null);
+
+  // Log les valeurs pour débogage
+  useEffect(() => {
+    console.log('Sound data:', soundData);
+  }, [soundData]);
 
   // Fonction qui appelle la réinitialisation à la fois côté serveur et dans le composant
   const handleResetMaxPeak = () => {
@@ -33,14 +38,14 @@ const Dashboard: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         <SoundMeter 
-          value={soundData.currentDb} 
+          value={soundData.currentDb || 0} 
           label="Niveau dB Actuel" 
         />
         
         <div className="relative">
           <SoundMeter 
             ref={maxMeterRef}
-            value={soundData.maxPeak} 
+            value={soundData.maxPeak || 0} 
             label="Pic Sonore Maximum" 
             showIndicator={false}
             isMaxMeter={true}
@@ -54,6 +59,13 @@ const Dashboard: React.FC = () => {
             <span className="ml-1 hidden md:inline-block text-sm">Réinitialiser</span>
           </button>
         </div>
+      </div>
+
+      {/* Affichage des valeurs brutes pour débogage */}
+      <div className="bg-gray-100 p-3 mb-6 rounded text-sm">
+        <p>Valeurs brutes pour débogage:</p>
+        <p>Niveau actuel: {soundData.currentDb || 0}</p>
+        <p>Pic maximum: {soundData.maxPeak || 0}</p>
       </div>
 
       <div className="bg-white rounded-lg shadow-md p-6">

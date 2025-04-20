@@ -17,17 +17,39 @@ export const useSocketConnection = () => {
     const socketInstance = io(SOCKET_SERVER_URL);
     setSocket(socketInstance);
 
+    // Simulation timer pour générer des données en mode déconnecté
+    let simulationTimer: NodeJS.Timeout | null = null;
+
     socketInstance.on('connect', () => {
       console.log('Connected to WebSocket server');
       setIsConnected(true);
       setError(null);
       setSimulationActive(false);
+      
+      // Arrêter la simulation quand connecté
+      if (simulationTimer) {
+        clearInterval(simulationTimer);
+        simulationTimer = null;
+      }
     });
 
     socketInstance.on('disconnect', () => {
       console.log('Disconnected from WebSocket server');
       setIsConnected(false);
       setSimulationActive(true);
+      
+      // Démarrer la simulation quand déconnecté
+      if (!simulationTimer) {
+        simulationTimer = setInterval(() => {
+          const randomDb = Math.random() * 80;
+          const newData = {
+            currentDb: randomDb,
+            maxPeak: Math.max(soundData.maxPeak, randomDb)
+          };
+          console.log('Simulation data:', newData);
+          setSoundData(newData);
+        }, 1000);
+      }
     });
 
     socketInstance.on('connect_error', (err) => {
@@ -35,6 +57,19 @@ export const useSocketConnection = () => {
       setError(`Connection failed: ${err.message}`);
       setIsConnected(false);
       setSimulationActive(true);
+      
+      // Démarrer la simulation en cas d'erreur
+      if (!simulationTimer) {
+        simulationTimer = setInterval(() => {
+          const randomDb = Math.random() * 80;
+          const newData = {
+            currentDb: randomDb,
+            maxPeak: Math.max(soundData.maxPeak, randomDb)
+          };
+          console.log('Simulation data:', newData);
+          setSoundData(newData);
+        }, 1000);
+      }
     });
 
     socketInstance.on('soundData', (data) => {
@@ -48,6 +83,9 @@ export const useSocketConnection = () => {
 
     return () => {
       socketInstance.disconnect();
+      if (simulationTimer) {
+        clearInterval(simulationTimer);
+      }
     };
   }, []);
 
@@ -56,13 +94,13 @@ export const useSocketConnection = () => {
     if (socket) {
       // Envoyer un événement au serveur pour réinitialiser le pic
       socket.emit('resetMaxPeak');
-      
-      // Mettre à jour l'état local - SUPPRIMEZ CETTE LIGNE si vous voulez conserver la valeur côté client
-      // setSoundData(prev => ({ ...prev, maxPeak: 0 }));
-      
       console.log('Max peak reset requested');
     } else {
       console.warn('Cannot reset max peak: socket not connected');
+      // En mode simulation, réinitialiser localement
+      if (simulationActive) {
+        setSoundData(prev => ({ ...prev, maxPeak: 0 }));
+      }
     }
   };
 

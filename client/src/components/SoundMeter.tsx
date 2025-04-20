@@ -27,13 +27,13 @@ const SoundMeter = forwardRef<SoundMeterRef, SoundMeterProps>(({
   // Update the all-time max if this is a max meter and we see a higher value
   useEffect(() => {
     if (isMaxMeter && value > allTimeMax) {
+      console.log(`Updating max from ${allTimeMax} to ${value}`);
       setAllTimeMax(value);
     }
   }, [value, isMaxMeter, allTimeMax]);
   
   // Use the local max if this is a max meter, otherwise use the incoming value
-  // Cette ligne est cruciale - elle utilise le maximum local ou la valeur transmise
-  const displayValue = isMaxMeter ? Math.max(allTimeMax, value) : value;
+  const displayValue = isMaxMeter ? allTimeMax : value;
   
   // Format the value to have max 2 decimal places
   const formattedValue = Number(displayValue.toFixed(2));
@@ -54,6 +54,7 @@ const SoundMeter = forwardRef<SoundMeterRef, SoundMeterProps>(({
   // Function to reset the all-time max (if this component supports it)
   const resetLocalMax = () => {
     if (isMaxMeter) {
+      console.log('Resetting local max to 0');
       setAllTimeMax(0);
     }
   };
