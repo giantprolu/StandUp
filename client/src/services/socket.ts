@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { SoundData } from '../types/sound';
 
 // Use your Raspberry Pi's IP address
-const SOCKET_SERVER_URL = 'http://192.168.1.27:3000';
+const SOCKET_SERVER_URL = 'http://10.0.3.37:3000';
 
 export const useSocketConnection = () => {
   const [socket, setSocket] = useState<Socket | null>(null);
